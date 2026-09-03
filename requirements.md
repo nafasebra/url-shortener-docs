@@ -1,9 +1,5 @@
 # URL shortener requirements
 
-What is a URL Shortener?
-
-A URL shortener is a piece of software that reduces the length of your current URL. As an internet user, you need this tool to share links across the internet :)
-
 Suppose we want to implement a tool like bit.ly, but very simple and without any authentication. The user can just send their URL and see all the created URLs based on their IP address.
 
 ## Functional and non-functional requirements
