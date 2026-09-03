@@ -109,3 +109,8 @@ Therefore, a raw estimate of `180 GB/year` does **not** mean provisioning exactl
 ## Design implication for V1
 
 After replacing the example inputs with expected traffic, compare the resulting request rate and storage growth with the limits of the chosen database. At modest scale, a relational database such as PostgreSQL can be a practical V1 choice. As redirect traffic grows, optimize the read path with appropriate indexes and, if needed, caching and read replicas.
+
+# What is the Next?
+
+Continue -> [API design](api-design.md)
+
