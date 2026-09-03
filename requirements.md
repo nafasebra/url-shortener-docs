@@ -25,8 +25,4 @@ Suppose we want to implement a tool like bit.ly, but very simple and without any
 
 ## Capacity Estimation
 
-peak DAU (active user per day) = 10000 user
-peak URLs created per user per day = 5
-peak URLs created per day = 50000
-If 1 created URL → 10 redirects/day
-peak Redirect request per day = 500000
+Continue -> [Capacity Estimation](capacity-estimation.md)
