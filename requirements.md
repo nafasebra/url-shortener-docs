@@ -23,6 +23,10 @@ Suppose we want to implement a tool like bit.ly, but very simple and without any
 - Use pagination to retrive URLs
 
 
+## Note
+
+IP address is used as a temporary identity mechanism for the MVP. This approach does not provide reliable user identity because multiple users may share an IP address and a single user may use multiple IP addresses. A future version should introduce authentication and a persistent user ID.
+
 ## Capacity Estimation
 
 Continue -> [Capacity Estimation](capacity-estimation.md)

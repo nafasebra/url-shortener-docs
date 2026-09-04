@@ -198,3 +198,7 @@ Location: https://example.com/blah
     "message": "Short URL has been deleted."
 }
 ```
+
+# What is the Next?
+
+Continue -> [Data Model](data-model.md)
