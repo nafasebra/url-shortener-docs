@@ -78,20 +78,20 @@ Raw storage/year = Raw storage/day × 365
 The following is an example calculation, not a product traffic assumption:
 
 ```text
-URLs created/day (N) = 1,000,000
+URLs created/day (N) = 100,000
 Storage per URL (S)  = 500 bytes
 
 Raw storage/day
-= 1,000,000 × 500 bytes
-= 500,000,000 bytes
-≈ 500 MB/day
+= 100,000 × 500 bytes
+= 50,000,000 bytes
+≈ 50 MB/day
 
 Raw storage/year
-= 500 MB/day × 365
-≈ 182.5 GB/year
+= 50 MB/day × 365
+≈ 18.2 GB/year
 ```
 
-With those **example** inputs, the service would store roughly **180 GB of raw URL-record data per year**.
+With those **example** inputs, the service would store roughly **18 GB of raw URL-record data per year**.
 
 ## Raw storage is not total database capacity
 
@@ -104,7 +104,7 @@ The raw-record estimate is only the starting point. Real capacity planning must 
 | Replication | High availability commonly keeps one or more replicas, each requiring a copy of the data. |
 | Backups | Point-in-time recovery and retained snapshots require separate storage. |
 
-Therefore, a raw estimate of `180 GB/year` does **not** mean provisioning exactly `180 GB` of database storage. The production capacity target should include headroom for indexes and database overhead, then separately budget for replicas and backups.
+Therefore, a raw estimate of `18 GB/year` does **not** mean provisioning exactly `18 GB` of database storage. The production capacity target should include headroom for indexes and database overhead, then separately budget for replicas and backups.
 
 ## Design implication for V1
 
