@@ -1,16 +1,27 @@
 # URL Shortener - API Design Documentation
 
-In this document, we define how the client communicates with the system.
+This document defines how the client communicates with the system.
 
-## 1. Create Short URL
+## Authentication
 
-**URL:** `POST /urls`
+Protected endpoints require authentication.
+
+```http
+Authorization: Bearer <access_token>
+```
+
+---
+
+## 1. Register
+
+**URL:** `POST /auth/register`
 
 ### Request
 
 ```json
 {
-    "url": "https://example.com/blah"
+  "email": "user@example.com",
+  "password": "StrongPassword123!"
 }
 ```
 
@@ -20,13 +31,125 @@ In this document, we define how the client communicates with the system.
 
 ```json
 {
-    "code": 201,
-    "message": "URL was created successfully!",
-    "data": {
-        "id": "123",
-        "short_url": "https://shrtnr.xyz/ab23c5e",
-        "url": "https://example.com/blah"
-    }
+  "code": 201,
+  "message": "User registered successfully."
+}
+```
+
+### Error Responses
+
+**400 Bad Request** — Invalid input
+
+```json
+{
+  "code": 400,
+  "message": "Invalid email or password."
+}
+```
+
+**409 Conflict** — Email already exists
+
+```json
+{
+  "code": 409,
+  "message": "Email is already registered."
+}
+```
+
+---
+
+## 2. Login
+
+**URL:** `POST /auth/login`
+
+### Request
+
+```json
+{
+  "email": "user@example.com",
+  "password": "StrongPassword123!"
+}
+```
+
+### Success Response
+
+**Status:** `200 OK`
+
+```json
+{
+  "code": 200,
+  "message": "Login successful.",
+  "data": {
+    "access_token": "<access_token>"
+  }
+}
+```
+
+### Error Responses
+
+**401 Unauthorized** — Invalid credentials
+
+```json
+{
+  "code": 401,
+  "message": "Invalid email or password."
+}
+```
+
+**429 Too Many Requests** — Rate limit exceeded
+
+```json
+{
+  "code": 429,
+  "message": "Too many login attempts. Try again later."
+}
+```
+
+---
+
+## 3. Logout
+
+**URL:** `POST /auth/logout`
+
+**Authentication:** Required
+
+### Success Response
+
+**Status:** `204 No Content`
+
+No response body is returned.
+
+---
+
+## 4. Create Short URL
+
+**URL:** `POST /urls`
+
+**Authentication:** Required
+
+### Request
+
+```json
+{
+  "url": "https://example.com/blah"
+}
+```
+
+### Success Response
+
+**Status:** `201 Created`
+
+```json
+{
+  "code": 201,
+  "message": "URL created successfully.",
+  "data": {
+    "id": "123",
+    "short_code": "ab23c5e",
+    "short_url": "https://shrtnr.xyz/ab23c5e",
+    "url": "https://example.com/blah",
+    "created_at": "2026-09-21T10:00:00Z"
+  }
 }
 ```
 
@@ -36,8 +159,17 @@ In this document, we define how the client communicates with the system.
 
 ```json
 {
-    "code": 400,
-    "message": "Invalid URL."
+  "code": 400,
+  "message": "Invalid URL."
+}
+```
+
+**401 Unauthorized** — Authentication required
+
+```json
+{
+  "code": 401,
+  "message": "Authentication required."
 }
 ```
 
@@ -45,20 +177,22 @@ In this document, we define how the client communicates with the system.
 
 ```json
 {
-    "code": 429,
-    "message": "Rate limit exceeded. Try again later."
+  "code": 429,
+  "message": "Rate limit exceeded. Try again later."
 }
 ```
 
 ---
 
-## 2. Get All URLs
-
-The backend identifies the user based on their IP address.
+## 5. Get User's URLs
 
 **URL:** `GET /urls`
 
-The endpoint uses **cursor-based pagination**.
+**Authentication:** Required
+
+The backend identifies the user using their authenticated `user_id`.
+
+The endpoint uses cursor-based pagination.
 
 ### Query Parameters
 
@@ -68,13 +202,14 @@ cursor
 ```
 
 - `limit` — Maximum number of URLs to return.
-- `cursor` — A cursor pointing to the position from which the next page should be retrieved.
+- `cursor` — Cursor pointing to the next page.
 - If `cursor` is not provided, the first page is returned.
 
 ### Example Request
 
 ```http
 GET /urls?limit=20&cursor=eyJpZCI6MTIzfQ==
+Authorization: Bearer <access_token>
 ```
 
 ### Success Response
@@ -83,25 +218,29 @@ GET /urls?limit=20&cursor=eyJpZCI6MTIzfQ==
 
 ```json
 {
-    "code": 200,
-    "message": "URLs retrieved successfully!",
-    "data": [
-        {
-            "id": "123",
-            "short_url": "https://shrtnr.xyz/ab23c5e",
-            "url": "https://example.com/blah"
-        },
-        {
-            "id": "122",
-            "short_url": "https://shrtnr.xyz/xy91ka",
-            "url": "https://example.com/another-url"
-        }
-    ],
-    "pagination": {
-        "limit": 20,
-        "next_cursor": "eyJpZCI6MTAyfQ==",
-        "has_more": true
+  "code": 200,
+  "message": "URLs retrieved successfully.",
+  "data": [
+    {
+      "id": "123",
+      "short_code": "ab23c5e",
+      "short_url": "https://shrtnr.xyz/ab23c5e",
+      "url": "https://example.com/blah",
+      "created_at": "2026-09-21T10:00:00Z"
+    },
+    {
+      "id": "122",
+      "short_code": "xy91ka",
+      "short_url": "https://shrtnr.xyz/xy91ka",
+      "url": "https://example.com/another-url",
+      "created_at": "2026-09-20T10:00:00Z"
     }
+  ],
+  "pagination": {
+    "limit": 20,
+    "next_cursor": "eyJpZCI6MTAyfQ==",
+    "has_more": true
+  }
 }
 ```
 
@@ -109,32 +248,46 @@ When there are no more URLs:
 
 ```json
 {
-    "pagination": {
-        "limit": 20,
-        "next_cursor": null,
-        "has_more": false
-    }
+  "code": 200,
+  "message": "URLs retrieved successfully.",
+  "data": [],
+  "pagination": {
+    "limit": 20,
+    "next_cursor": null,
+    "has_more": false
+  }
 }
 ```
 
 ### Error Responses
 
-**400 Bad Request** — Invalid cursor or pagination parameters
+**400 Bad Request** — Invalid pagination parameters
 
 ```json
 {
-    "code": 400,
-    "message": "Invalid pagination parameters."
+  "code": 400,
+  "message": "Invalid pagination parameters."
+}
+```
+
+**401 Unauthorized** — Authentication required
+
+```json
+{
+  "code": 401,
+  "message": "Authentication required."
 }
 ```
 
 ---
 
-## 3. Delete a Specific URL
+## 6. Delete a Specific URL
 
 **URL:** `DELETE /urls/{url_id}`
 
-The backend must verify that the requested URL belongs to the user's IP address before deleting it.
+**Authentication:** Required
+
+The backend verifies that the URL belongs to the authenticated user before deleting it.
 
 ### Success Response
 
@@ -144,29 +297,31 @@ No response body is returned.
 
 ### Error Responses
 
-**404 Not Found** — URL does not exist
+**401 Unauthorized** — Authentication required
 
 ```json
 {
-    "code": 404,
-    "message": "URL not found."
+  "code": 401,
+  "message": "Authentication required."
 }
 ```
 
-**403 Forbidden** — URL does not belong to the requesting IP address
+**404 Not Found** — URL does not exist or does not belong to the user
 
 ```json
 {
-    "code": 403,
-    "message": "You do not have permission to delete this URL."
+  "code": 404,
+  "message": "URL not found."
 }
 ```
 
 ---
 
-## 4. Redirect
+## 7. Redirect
 
-**URL:** `GET /{shortCode}`
+**URL:** `GET /{short_code}`
+
+**Authentication:** Not required
 
 The system redirects the client to the original URL.
 
@@ -185,8 +340,8 @@ Location: https://example.com/blah
 
 ```json
 {
-    "code": 404,
-    "message": "Short URL not found."
+  "code": 404,
+  "message": "Short URL not found."
 }
 ```
 
@@ -194,11 +349,24 @@ Location: https://example.com/blah
 
 ```json
 {
-    "code": 410,
-    "message": "Short URL has been deleted."
+  "code": 410,
+  "message": "Short URL has been deleted."
 }
 ```
 
-# What is the Next?
+---
 
-Continue -> [Data Model](data-model.md)
+## Client Behavior
+
+The client handles API responses as follows:
+
+- After successful registration, the client redirects the user to the `/login` page.
+- The user can then log in using the `/auth/login` endpoint.
+- If a protected endpoint returns `401 Unauthorized`, the client redirects the user to the `/login` page.
+- After successful login, the client stores the access token securely and uses it for subsequent protected requests.
+
+---
+
+# What Is Next?
+
+Continue → [Data Model](data-model.md)
