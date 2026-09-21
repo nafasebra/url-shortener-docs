@@ -1,31 +1,30 @@
 # URL shortener requirements
 
-Suppose we want to implement a tool like bit.ly, but very simple and without any authentication. The user can just send their URL and see all the created URLs based on their IP address.
+Suppose we want to implement a simple URL shortener like Bitly. Users can register, log in, and manage the URLs created under their accounts.
 
 ## Functional and non-functional requirements
 
 ### functional:
 
-- User can submit a URL.
-- System generates a short URL.
+- User can register, log in and log out.
+- User can create URLs under their account.
+- Unauthenticated users cannot access protected endpoints.
+- Users can access short URLs and be redirected to the original URLs.
+- The system returns an appropriate error when a short URL does not exist.
+- User can retrieve only their own URLs.
+- User can delete only their own URLs.
+- The system generates a short URL.
 - A short URL maps to its original URL.
-- User can retrieve all URLs created from their IP address.
-- User can delete URLs they created.
-- The same original URL should map to the same short URL.
+- The same original URL should always map to the same short URL across the system.
 - The system validates submitted URLs.
-- URL ownership is determined by IP address.
-- No authentication is required.
 
 ### non-functional: 
 - Each IP can create at most one short URL every 15 seconds.
-- The system should be able to handle URL creation and retrieval at scale.
-- Do validation based frequently URL, IP and IP rate-limiting (at least 15 seconds).
-- Use pagination to retrive URLs
-
-
-## Note
-
-IP address is used as a temporary identity mechanism for the MVP. This approach does not provide reliable user identity because multiple users may share an IP address and a single user may use multiple IP addresses. A future version should introduce authentication and a persistent user ID.
+- The system should handle URL creation and retrieval at scale.
+- Use cursor-based pagination to retrieve URLs.
+- Passwords must be securely hashed before storage.
+- Authentication endpoints should have rate limiting.
+- The system should use HTTPS to protect user credentials and tokens.
 
 ## Capacity Estimation
 
