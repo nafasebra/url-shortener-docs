@@ -160,39 +160,102 @@ For logout, the API Server deletes the session from Redis and clears the session
 
 ## Data Flow
 
-Create short URL:
+### Login / Session Data Flow
 
 ```text
 Client
-  | original_url + session cookie
-  v
-API Server
-  | session_id
-  v
-Redis
-  | user_id
-  v
-Rate Limiter
-  | user_id-based rate-limit state
-  <-> Redis
-  |
-  v
-URL Module
-  | user_id + original_url + short_code
-  v
+  │ email + password
+  ↓
+API Server / Auth Module
+  │ query user
+  ↓
 PostgreSQL
-  |
-  v
-short_url
-  |
-  v
+  │ user data
+  ↓
+Auth Module
+  │ create session_id
+  │
+  ├── Store session_id → user_id in Redis
+  │
+  └── Set session_id as HttpOnly cookie
+                    ↓
+                  Client
+```
+
+
+### Create Short URL Data Flow
+
+```
+Client
+  │ session cookie + original_url
+  ↓
+API Server
+  │
+  ├── session_id → Redis
+  │                 ↓
+  │               user_id
+  ↓
+Rate Limiter
+  │ user_id
+  ↔ Redis
+  ↓
+URL Module
+  │ user_id + original_url + short_code
+  ↓
+PostgreSQL
+  ↓
+API Server
+  │ short_url
+  ↓
+Client
+```
+
+
+### Redirect Data Flow
+
+```text
+Client
+  │ short_code
+  ↓
+API Server / URL Module
+  │ short_code
+  ↓
+PostgreSQL
+  │ original_url
+  ↓
+API Server
+  │ 301 Location: original_url
+  ↓
 Client
 ```
 
 ## Architectural Decisions
 
-<!-- Placeholder: document the major decisions here, including the modular monolith, PostgreSQL for persistent users/URLs, Redis for sessions and rate-limiting state, secure HttpOnly cookies for sessions, and user_id-based rate limiting for authenticated URL creation. -->
+### Why Modular Monolith?
+
+Our application is relatively simple and currently has two main entities: User and URL. A modular monolith keeps the architecture simple while allowing us to separate responsibilities into modules such as Auth and URL management.
+
+At this stage, we do not need the additional complexity of microservices. If the system grows in the future, the clear module boundaries can make it easier to separate parts of the application into independent services.
+
+### Why Redis?
+
+Redis is an in-memory key-value data store. We use it for temporary data such as sessions and rate-limiting state.
+
+Keeping this state outside the API Server also helps us scale the application horizontally in the future. If we run multiple API Server instances behind a load balancer, they can share the same session and rate-limiting state through Redis.
+
+### Why PostgreSQL?
+
+We need persistent storage for users and URLs. PostgreSQL is a relational database and is a good fit because our data has a clear relationship: a user can own multiple URLs.
+
+It also provides features such as constraints, indexes, and transactions that are useful for maintaining consistent application data.
 
 ## Scalability Considerations
 
-<!-- Placeholder: document scalability considerations here. -->
+The initial version runs as a single backend application, but the system can be scaled horizontally by running multiple API Server instances behind a load balancer.
+
+Redis stores shared session and rate-limiting state, allowing all API Server instances to access the same temporary data.
+
+PostgreSQL remains the primary persistent database. As traffic grows, we can introduce additional scaling strategies based on the system's bottlenecks.
+
+Session-based authentication can still be used when the application scales because sessions are stored centrally in Redis and shared between API Server instances.
+
