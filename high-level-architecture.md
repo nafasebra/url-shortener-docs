@@ -64,11 +64,9 @@ PostgreSQL is the primary persistent database for the application. Based on the 
 
 ## Request Flow
 
-
 ### Create Short URL
 
-```
-
+```text
 Client
   ↓
 API Server
@@ -82,10 +80,31 @@ URL Module
 PostgreSQL
   ↓
 Client
-
 ```
 
+The client signs up or logs in and is redirected to the homepage. The user enters a URL and submits it to generate a short URL.
+The client must be authenticated to create a short URL. If the client is not authenticated, the API returns a `401 Unauthorized` error.
+The client can make a maximum of `X` requests within one second. If the rate limit is exceeded, the API returns a `429 Too Many Requests` error.
+If the request is allowed, the URL Module validates the original URL, generates a short code, and stores the URL in PostgreSQL. The generated short URL is then returned to the client.
+
 ### Redirect
+
+```text
+Client
+  ↓
+API Server
+  ↓
+URL Module
+  ↓
+PostgreSQL
+  ↓
+301 Redirect
+  ↓
+Original URL
+```
+
+Anyone can access a generated short URL. Authentication is not required for redirects.
+The URL Module looks up the short code in PostgreSQL. If the short URL exists, the API returns a `301` redirect to the original URL.
 
 ## Data Flow
 
