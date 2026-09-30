@@ -81,7 +81,9 @@ This is raw record storage only. Additional capacity is needed for:
 - Add an index on `(user_id, created_at)` for listing a user's URLs.
 - Use cursor-based pagination.
 - Consider caching if redirect traffic increases.
-- Use IP-based rate limiting.
+- Use Redis for session storage and rate-limiting state.
+- Use authenticated `user_id`-based rate limiting for URL creation.
+- Public redirects do not require authentication and are not subject to the authenticated user-based URL creation rate limiter.
 
 # What is Next?
 

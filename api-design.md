@@ -6,8 +6,15 @@ This document defines how the client communicates with the system.
 
 Protected endpoints require authentication.
 
+The system uses session-based authentication.
+
+After a successful login, the API Server generates a random `session_id`, stores it in Redis with the authenticated `user_id`, and sends it to the client using a secure `HttpOnly` cookie.
+
+The client automatically sends the session cookie with authenticated requests.
+For protected endpoints, the API Server reads the session cookie, looks up the session in Redis, and determines the authenticated `user_id`.
+
 ```http
-Authorization: Bearer <access_token>
+Cookie: session_id=<session_id>
 ```
 
 ---
@@ -75,13 +82,16 @@ Authorization: Bearer <access_token>
 
 **Status:** `200 OK`
 
+The response sets a secure `HttpOnly` session cookie.
+
+```http
+Set-Cookie: session_id=<session_id>; HttpOnly; Secure; SameSite=Lax; Path=/
+```
+
 ```json
 {
   "code": 200,
-  "message": "Login successful.",
-  "data": {
-    "access_token": "<access_token>"
-  }
+  "message": "Login successful."
 }
 ```
 
@@ -113,6 +123,8 @@ Authorization: Bearer <access_token>
 
 **Authentication:** Required
 
+Logout deletes the session from Redis and clears the session cookie.
+
 ### Success Response
 
 **Status:** `204 No Content`
@@ -126,6 +138,8 @@ No response body is returned.
 **URL:** `POST /urls`
 
 **Authentication:** Required
+
+The client sends the session cookie automatically. The backend resolves the authenticated `user_id` from Redis before applying the URL creation rate limit.
 
 ### Request
 
@@ -190,7 +204,7 @@ No response body is returned.
 
 **Authentication:** Required
 
-The backend identifies the user using their authenticated `user_id`.
+The backend identifies the user by reading the session cookie and resolving the authenticated `user_id` from Redis.
 
 The endpoint uses cursor-based pagination.
 
@@ -209,7 +223,7 @@ cursor
 
 ```http
 GET /urls?limit=20&cursor=eyJpZCI6MTIzfQ==
-Authorization: Bearer <access_token>
+Cookie: session_id=<session_id>
 ```
 
 ### Success Response
@@ -325,6 +339,8 @@ No response body is returned.
 
 The system redirects the client to the original URL.
 
+Public short-URL redirects do not require a session cookie and are not subject to the authenticated user-based URL creation rate limiter.
+
 ### Success Response
 
 **Status:** `301 Moved Permanently`
@@ -363,7 +379,8 @@ The client handles API responses as follows:
 - After successful registration, the client redirects the user to the `/login` page.
 - The user can then log in using the `/auth/login` endpoint.
 - If a protected endpoint returns `401 Unauthorized`, the client redirects the user to the `/login` page.
-- After successful login, the client stores the access token securely and uses it for subsequent protected requests.
+- After successful login, the browser stores the secure `HttpOnly` session cookie set by the API Server.
+- For subsequent protected requests, the browser sends the session cookie automatically.
 
 ---
 

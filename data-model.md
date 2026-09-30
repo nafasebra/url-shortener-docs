@@ -71,9 +71,45 @@ users (1) ──────────── (N) urls
 
 - Unique index on `short_code` for redirect lookups.
 - Index on `(user_id, created_at)` for retrieving a user's URLs with pagination.
-- Index on `(ip_address, created_at)` if needed for rate-limiting queries.
 
 ---
+
+## Redis Data
+
+Redis stores temporary data that does not belong in PostgreSQL.
+
+### Sessions
+
+After a successful login, the API Server generates a random `session_id`.
+
+The `session_id` is stored in Redis and mapped to the authenticated `user_id`.
+The client receives the `session_id` in a secure `HttpOnly` cookie and automatically sends it with authenticated requests.
+
+Sessions must have a TTL so they expire automatically.
+
+Example:
+
+```text
+session:{session_id} -> user_id
+TTL: configured session lifetime
+```
+
+Session IDs are not stored in PostgreSQL.
+
+### Rate-limiting State
+
+Redis also stores rate-limiting state.
+
+For authenticated URL creation, the rate limit is based on `user_id`.
+
+Example:
+
+```text
+rate_limit:create_url:{user_id} -> request count or timestamp
+TTL: rate-limit window
+```
+
+Public short-URL redirects do not require authentication and are not subject to this authenticated user-based rate limiter.
 
 ## How to Generate `short_code`
 
@@ -184,6 +220,8 @@ The system uses two main tables:
 - `urls` — Stores URLs created by authenticated users.
 
 The `urls` table references the `users` table through `user_id`.
+
+Redis stores temporary session data and rate-limiting state. PostgreSQL remains the persistent storage for users and URLs, and session IDs are not stored in PostgreSQL.
 
 The `short_code` is generated using Base62 encoding based on the URL's unique database ID.
 
