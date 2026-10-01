@@ -78,7 +78,9 @@ This is raw record storage only. Additional capacity is needed for:
 
 - Use PostgreSQL as the primary database.
 - Add an index on `short_code` for redirect lookups.
-- Add an index on `(user_id, created_at)` for listing a user's URLs.
+- Add a unique index on `original_url` for global URL deduplication.
+- Add an index on `user_urls (user_id, created_at)` for listing a user's URLs.
+- Add a partial unique index on `user_urls (user_id, url_id)` where `deleted_at IS NULL` so a user has only one active association with a URL.
 - Use cursor-based pagination.
 - Consider caching if redirect traffic increases.
 - Use Redis for session storage and rate-limiting state.

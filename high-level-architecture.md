@@ -30,7 +30,8 @@ API Server
    |
    +------ PostgreSQL
             |-- Users
-            `-- URLs
+            |-- URLs
+            `-- User URLs
 ```
 
 ### Client
@@ -72,7 +73,7 @@ For authenticated URL creation, Redis also stores rate-limiting state based on `
 
 ### Database (PostgreSQL)
 
-PostgreSQL is the primary persistent database for the application. Based on the [Data Model](data-model.md), it stores permanent data such as users and URLs.
+PostgreSQL is the primary persistent database for the application. Based on the [Data Model](data-model.md), it stores permanent data such as users, globally unique URLs, and per-user URL ownership associations.
 
 Session IDs are not stored in PostgreSQL.
 
@@ -106,7 +107,7 @@ The client signs up or logs in and is redirected to the homepage. The user enter
 The client must be authenticated to create a short URL. If the client is not authenticated, the API returns a `401 Unauthorized` error.
 The API Server reads the session cookie, looks up the session in Redis, and determines the authenticated `user_id`.
 The authenticated user can make a maximum of `X` requests within one second. If the rate limit is exceeded, the API returns a `429 Too Many Requests` error.
-If the request is allowed, the URL Module validates the original URL, generates a 7-character short code with a cryptographically secure random generator, and stores the URL in PostgreSQL. PostgreSQL enforces the unique `short_code` constraint; if an insert collides, the URL Module generates another code and retries. The generated short URL is then returned to the client.
+If the request is allowed, the URL Module validates the original URL and checks PostgreSQL for an existing global `urls` row with the same `original_url`. If it exists, the module reuses the existing `short_code` and creates or restores the user's `user_urls` ownership association. If it does not exist, the module generates a 7-character short code with a cryptographically secure random generator, inserts the new global URL, and creates the user's ownership association. PostgreSQL enforces unique constraints on both `original_url` and `short_code`; if concurrent inserts collide, the URL Module reads the existing row or generates another code as appropriate.
 
 ### Redirect
 
@@ -200,9 +201,10 @@ Rate Limiter
   ↔ Redis
   ↓
 URL Module
-  │ user_id + original_url + short_code
+  │ original_url
   ↓
 PostgreSQL
+  │ urls row + user_urls association
   ↓
 API Server
   │ short_url
@@ -233,7 +235,7 @@ Client
 
 ### Why Modular Monolith?
 
-Our application is relatively simple and currently has two main entities: User and URL. A modular monolith keeps the architecture simple while allowing us to separate responsibilities into modules such as Auth and URL management.
+Our application is relatively simple and currently has users, global URLs, and user URL ownership associations. A modular monolith keeps the architecture simple while allowing us to separate responsibilities into modules such as Auth and URL management.
 
 At this stage, we do not need the additional complexity of microservices. If the system grows in the future, the clear module boundaries can make it easier to separate parts of the application into independent services.
 
@@ -245,7 +247,7 @@ Keeping this state outside the API Server also helps us scale the application ho
 
 ### Why PostgreSQL?
 
-We need persistent storage for users and URLs. PostgreSQL is a relational database and is a good fit because our data has a clear relationship: a user can own multiple URLs.
+We need persistent storage for users, globally deduplicated URLs, and per-user URL ownership. PostgreSQL is a relational database and is a good fit because our data has clear relationships and relies on uniqueness constraints for correctness.
 
 It also provides features such as constraints, indexes, and transactions that are useful for maintaining consistent application data.
 

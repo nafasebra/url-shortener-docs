@@ -141,6 +141,8 @@ No response body is returned.
 
 The client sends the session cookie automatically. The backend resolves the authenticated `user_id` from Redis before applying the URL creation rate limit.
 
+The same original URL always maps to the same short URL across the system. If the submitted URL already exists in the global `urls` table, the backend reuses the existing `short_code` and creates or restores the authenticated user's `user_urls` ownership association instead of generating a new short code.
+
 ### Request
 
 ```json
@@ -156,7 +158,7 @@ The client sends the session cookie automatically. The backend resolves the auth
 ```json
 {
   "code": 201,
-  "message": "URL created successfully.",
+  "message": "URL created or retrieved successfully.",
   "data": {
     "id": "123",
     "short_code": "ab23c5e",
@@ -301,7 +303,8 @@ When there are no more URLs:
 
 **Authentication:** Required
 
-The backend verifies that the URL belongs to the authenticated user before deleting it.
+The backend verifies that the URL belongs to the authenticated user before deleting it from that user's account.
+Deletion soft-deletes the `user_urls` ownership association by setting `deleted_at`; it does not delete the global `urls` row because other users may still own the same short URL.
 
 ### Success Response
 
@@ -358,15 +361,6 @@ Location: https://example.com/blah
 {
   "code": 404,
   "message": "Short URL not found."
-}
-```
-
-**410 Gone** — Short URL was deleted
-
-```json
-{
-  "code": 410,
-  "message": "Short URL has been deleted."
 }
 ```
 
