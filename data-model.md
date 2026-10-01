@@ -113,59 +113,11 @@ Public short-URL redirects do not require authentication and are not subject to 
 
 ## How to Generate `short_code`
 
-Since we already have a unique `BIGINT` ID, we can use **Base62 encoding** to generate the `short_code`.
+Short codes are generated directly with a cryptographically secure random generator. Each code initially contains 7 characters selected from `a-z`, `A-Z`, and `0-9`.
 
-Base62 uses 62 characters:
+The generated code is independent of `urls.id`; the `BIGINT` primary key remains an internal database identifier and is not Base62-encoded. This avoids predictable short codes derived from sequential IDs.
 
-- A-Z: 26 characters
-- a-z: 26 characters
-- 0-9: 10 characters
-
-For example:
-
-```text
-ID: 123456789
-       ↓
-   Base62 Encode
-       ↓
-short_code: 8M0kX
-```
-
-Using the database ID as the source of the `short_code` guarantees uniqueness because the ID is a unique primary key.
-
-### Generation Process
-
-1. Insert the URL record into the database.
-2. Retrieve the generated `id`.
-3. Convert the ID to Base62.
-4. Update the record with the generated `short_code`.
-
-This process should be performed inside a database transaction.
-
-### Advantages
-
-This approach is appropriate for the current stage of the system because it is:
-
-- Simple
-- Fast
-- Easy to implement
-- Deterministic
-- Free from collision handling during generation
-
-### Limitations
-
-Generated short codes are predictable and can potentially be enumerated.
-
-For example, if a user knows that a URL has the short code generated from ID `123`, they might be able to guess codes generated from nearby IDs.
-
-If privacy becomes an important requirement, we can switch to a random or non-sequential short-code generation strategy.
-
-In that case:
-
-- Generate a random short code.
-- Add a unique constraint on `short_code`.
-- Check for collisions.
-- Regenerate the code if a collision occurs.
+The `short_code` column has a unique constraint. The application inserts the generated code and retries with a newly generated code if PostgreSQL reports a unique-constraint collision. It does not run a separate existence query before insertion, since the constraint handles the race safely.
 
 ---
 
@@ -223,7 +175,7 @@ The `urls` table references the `users` table through `user_id`.
 
 Redis stores temporary session data and rate-limiting state. PostgreSQL remains the persistent storage for users and URLs, and session IDs are not stored in PostgreSQL.
 
-The `short_code` is generated using Base62 encoding based on the URL's unique database ID.
+The `short_code` is generated randomly and securely, while PostgreSQL enforces its uniqueness. The `urls.id` field remains a BIGINT primary key but is not used to generate the short code.
 
 # What Is Next?
 

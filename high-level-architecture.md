@@ -106,7 +106,7 @@ The client signs up or logs in and is redirected to the homepage. The user enter
 The client must be authenticated to create a short URL. If the client is not authenticated, the API returns a `401 Unauthorized` error.
 The API Server reads the session cookie, looks up the session in Redis, and determines the authenticated `user_id`.
 The authenticated user can make a maximum of `X` requests within one second. If the rate limit is exceeded, the API returns a `429 Too Many Requests` error.
-If the request is allowed, the URL Module validates the original URL, generates a short code, and stores the URL in PostgreSQL. The generated short URL is then returned to the client.
+If the request is allowed, the URL Module validates the original URL, generates a 7-character short code with a cryptographically secure random generator, and stores the URL in PostgreSQL. PostgreSQL enforces the unique `short_code` constraint; if an insert collides, the URL Module generates another code and retries. The generated short URL is then returned to the client.
 
 ### Redirect
 
@@ -258,4 +258,3 @@ Redis stores shared session and rate-limiting state, allowing all API Server ins
 PostgreSQL remains the primary persistent database. As traffic grows, we can introduce additional scaling strategies based on the system's bottlenecks.
 
 Session-based authentication can still be used when the application scales because sessions are stored centrally in Redis and shared between API Server instances.
-

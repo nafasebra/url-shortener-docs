@@ -244,8 +244,8 @@ Cookie: session_id=<session_id>
     },
     {
       "id": "122",
-      "short_code": "xy91ka",
-      "short_url": "https://shrtnr.xyz/xy91ka",
+      "short_code": "Q7mK2xP",
+      "short_url": "https://shrtnr.xyz/Q7mK2xP",
       "url": "https://example.com/another-url",
       "created_at": "2026-09-20T10:00:00Z"
     }
