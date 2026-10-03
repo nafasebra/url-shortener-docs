@@ -87,7 +87,7 @@ This is raw record storage only. Additional capacity is needed for:
 - Use authenticated `user_id`-based rate limiting for URL creation.
 - Public redirects do not require authentication and are not subject to the authenticated user-based URL creation rate limiter.
 
-# What is Next?
+# What Is Next?
 
-Continue -> [API design](api-design.md)
+Continue -> [API Design](api-design.md)
 

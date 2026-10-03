@@ -31,6 +31,6 @@ Suppose we want to implement a simple URL shortener like Bitly. Users can regist
 - The system should use HTTPS to protect user credentials and session cookies.
 - Public short-URL redirects do not require authentication and are not subject to the authenticated user-based URL creation rate limiter.
 
-## Capacity Estimation
+# What Is Next?
 
 Continue -> [Capacity Estimation](capacity-estimation.md)

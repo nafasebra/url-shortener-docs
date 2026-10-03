@@ -260,3 +260,7 @@ Redis stores shared session and rate-limiting state, allowing all API Server ins
 PostgreSQL remains the primary persistent database. As traffic grows, we can introduce additional scaling strategies based on the system's bottlenecks.
 
 Session-based authentication can still be used when the application scales because sessions are stored centrally in Redis and shared between API Server instances.
+
+# What Is Next?
+
+Continue -> [Detailed Design](detailed-design.md)

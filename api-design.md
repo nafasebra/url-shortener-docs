@@ -380,4 +380,4 @@ The client handles API responses as follows:
 
 # What Is Next?
 
-Continue → [Data Model](data-model.md)
+Continue -> [Data Model](data-model.md)

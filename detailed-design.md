@@ -275,4 +275,4 @@ The API attaches a request ID to logs and error responses so a failed operation 
 
 # What Is Next?
 
-Continue to [API Design](api-design.md).
+Continue -> [API Design](api-design.md)
