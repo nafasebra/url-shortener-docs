@@ -267,3 +267,56 @@ Warning alerts can be investigated during normal monitoring, while critical aler
 The specific notification channel can be selected during implementation.
 
 ## 6. Health Checks
+
+Health checks are used to determine whether an application instance is running and whether it is ready to receive traffic.
+
+They can be used by infrastructure such as a load balancer or container orchestrator to avoid sending traffic to unhealthy application instances.
+
+### Liveness
+
+The liveness check determines whether the application process is running and responsive.
+
+```text
+GET /health/live
+```
+
+A healthy application returns:
+
+```text
+200 OK
+```
+
+The liveness check does not depend on PostgreSQL or Redis. A temporary dependency failure should not cause the application itself to be considered dead.
+
+If the application cannot respond to the liveness check, the infrastructure may restart the instance.
+
+### Readiness
+
+The readiness check determines whether the application instance is currently able to serve requests.
+
+```text
+GET /health/ready
+```
+
+The readiness check verifies the availability of critical dependencies required by the application, including:
+
+- PostgreSQL
+- Redis
+
+If the required dependencies are available, the endpoint returns:
+
+```text
+200 OK
+```
+
+If a critical dependency is unavailable, the instance is considered not ready and should temporarily stop receiving new traffic.
+
+### Dependency Considerations
+
+PostgreSQL is required for URL creation, listing, deletion, and redirect lookups.
+
+Redis is required for session validation and rate limiting on protected endpoints. Public redirects in V1 do not require Redis.
+
+Because different endpoints have different dependencies, the initial readiness check can remain simple and conservative. More detailed dependency-specific health checks can be introduced later if required.
+
+Health-check responses should not expose sensitive information such as database credentials, connection strings, internal addresses, or other infrastructure secrets.
