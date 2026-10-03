@@ -148,10 +148,122 @@ Logging should not cause the main request to fail.
 
 If the logging system becomes unavailable, the application should continue serving requests when possible. Logging failures should therefore be handled separately from failures in critical dependencies such as PostgreSQL or Redis.
 
-## 3. Distributed Tracing
+## 3. Tracing
+
+Tracing helps us understand how a request moves through the system and where it spends its processing time.
+
+### Traced Operations
+
+The system traces important request flows, including:
+
+- URL creation (`POST /urls`)
+- Redirect (`GET /{short_code}`)
+- Login and registration
+- Redis operations for session validation and rate limiting
+- PostgreSQL operations for URL lookup and creation
+
+### Trace Context
+
+Each trace/span should contain:
+
+- Trace ID
+- Span ID
+- Operation name
+- Start time and duration
+- HTTP method and endpoint
+- HTTP status code
+- Error status, if the operation failed
+
+### Correlation
+
+Logs should include the trace ID when a trace is available.
+
+This allows us to find the logs related to a specific trace and investigate errors or slow operations in more detail.
+
+### Sensitive Data
+
+Like logs, traces must not contain sensitive data such as:
+
+- Passwords
+- Session IDs or authentication cookies
+- Database credentials or secrets
+- Full original URLs when they may contain sensitive information
 
 ## 4. Profiling
 
+Profiling is used when metrics or tracing indicate that a performance problem may be inside the application.
+
+It helps us identify which parts of the application consume CPU or memory resources.
+
+### Profiled Resources
+
+The main resources we profile are:
+
+- CPU usage
+- Memory usage and allocations
+
+Profiling is performed when needed during performance investigation and load testing rather than being the first step in diagnosing every problem.
+
+### Security
+
+Profiling endpoints must not be publicly accessible because they may expose internal information about the application.
+
 ## 5. Alerts
+
+Alerts are used to notify us when the monitoring system detects an important problem.
+
+Instead of continuously checking dashboards, alerts help us know when the system requires investigation.
+
+### Alert Conditions
+
+Alerts should be triggered for important system problems such as:
+
+- High API error rate
+- High API latency
+- PostgreSQL unavailable
+- High PostgreSQL query latency
+- PostgreSQL connection pool near capacity
+- Redis unavailable
+- High Redis operation latency
+
+Not every metric requires an alert. Alerts should be created for conditions that require investigation or action.
+
+### Severity
+
+Alerts are classified into two levels:
+
+- `Warning`: The system is still working, but a metric indicates a potential performance or reliability problem.
+- `Critical`: An important service or dependency is unavailable, or the system is failing to serve requests correctly.
+
+For example:
+
+- High API latency → Warning
+- High database connection usage → Warning
+- PostgreSQL unavailable → Critical
+- Redis unavailable → Critical
+- High `5xx` error rate → Critical
+
+### Thresholds
+
+Alerts should not be triggered by every temporary spike.
+
+A condition should remain outside its acceptable range for a configured period before triggering an alert.
+
+For example:
+
+```text
+p95 API latency > 500ms for 5 minutes
+→ Warning
+```
+
+Exact thresholds should be adjusted later based on load testing and production behavior.
+
+### Notification
+
+When an alert is triggered, the monitoring system should notify the team.
+
+Warning alerts can be investigated during normal monitoring, while critical alerts should generate an immediate notification because they may indicate that the system is unavailable or failing requests.
+
+The specific notification channel can be selected during implementation.
 
 ## 6. Health Checks
